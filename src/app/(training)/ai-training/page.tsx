@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MODULES, LEVELS } from "@/lib/ai-training/modules-data";
 import { shuffle } from "@/lib/ai-training/shuffle";
 import type {
@@ -20,6 +20,42 @@ type Screen = "setup" | "quiz" | "done";
 
 const isMobile = () =>
   typeof window !== "undefined" && window.matchMedia("(max-width:899px)").matches;
+
+// Remembers the last participant's data on this device only (no login,
+// no server round-trip) so someone doing Pre-Test then Post-Test back to
+// back doesn't have to retype nama/jabatan/telp. Cleared explicitly when
+// a different participant starts ("Assessment peserta lain").
+const PARTICIPANT_STORAGE_KEY = "wit-ai-training-participant";
+
+function readSavedParticipant(): Participant | null {
+  try {
+    const raw = window.localStorage.getItem(PARTICIPANT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.nama === "string" && typeof parsed?.jab === "string" && typeof parsed?.telp === "string") {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveParticipant(p: Participant) {
+  try {
+    window.localStorage.setItem(PARTICIPANT_STORAGE_KEY, JSON.stringify(p));
+  } catch {
+    // ignore (private browsing, storage disabled, etc.)
+  }
+}
+
+function clearSavedParticipant() {
+  try {
+    window.localStorage.removeItem(PARTICIPANT_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 function buildItems(mod: string, testType: TestType): QuizItem[] {
   const m = MODULES[mod];
@@ -63,6 +99,15 @@ export default function AiTrainingPage() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const saved = readSavedParticipant();
+    if (saved) {
+      setNama(saved.nama);
+      setJab(saved.jab);
+      setTelp(saved.telp);
+    }
+  }, []);
+
   function goToStep(n: number) {
     setStep(n);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -93,7 +138,9 @@ export default function AiTrainingPage() {
       return;
     }
     setFormErr(false);
-    setParticipant({ nama: trimmedNama, jab: trimmedJab, telp: trimmedTelp });
+    const p = { nama: trimmedNama, jab: trimmedJab, telp: trimmedTelp };
+    setParticipant(p);
+    saveParticipant(p);
 
     const pv = parseInt(preScoreInput, 10);
     setPreScore(testType === "post" && !isNaN(pv) && pv >= 0 && pv <= 100 ? pv : null);
@@ -232,6 +279,7 @@ export default function AiTrainingPage() {
   }
 
   function handleAgain() {
+    clearSavedParticipant();
     setNama("");
     setJab("");
     setTelp("");
