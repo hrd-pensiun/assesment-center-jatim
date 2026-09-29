@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,12 +39,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
       <div className="w-full max-w-sm rounded-card bg-card p-6 shadow-card">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="mb-3 grid size-12 place-items-center rounded-2xl bg-ink text-white shadow-float">
-            <GraduationCap className="size-6" />
-          </span>
-          <h1 className="text-2xl font-bold tracking-tight">
-            WIT Assessment<span className="text-accent">.</span>
-          </h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/branding/wit-logo-black.png" alt="WIT.ID" className="mb-3 h-8 w-auto" />
           <p className="mt-1 text-sm text-muted">Masuk sebagai admin Back Office</p>
         </div>
 

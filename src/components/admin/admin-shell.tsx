@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { ClipboardList, History, LogOut, GraduationCap } from "lucide-react";
+import { ClipboardList, History, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -44,12 +44,11 @@ export function AdminShell({
       {/* Floating dark rail */}
       <aside className="hidden w-60 shrink-0 flex-col rounded-[28px] bg-ink p-3 text-on-ink shadow-float md:flex">
         <div className="flex items-center gap-2 px-2 py-3">
-          <span className="grid size-9 place-items-center rounded-2xl bg-accent text-sm font-bold text-white shadow-glow">
-            <GraduationCap className="size-5" />
-          </span>
-          <div className="leading-tight">
-            <div className="text-sm font-bold">WIT Assessment</div>
-            <div className="text-[10px] uppercase tracking-wider text-on-ink-muted">Back Office</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/branding/wit-logo-white.png" alt="WIT.ID" className="h-6 w-auto" />
+          <div className="h-6 w-px bg-white/15" />
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-on-ink-muted">
+            Back Office
           </div>
         </div>
 
@@ -94,6 +93,8 @@ export function AdminShell({
 
       {/* Mobile top nav (no rail below md) */}
       <div className="fixed inset-x-3 top-3 z-40 flex items-center gap-2 rounded-2xl bg-ink px-3 py-2 text-on-ink shadow-float md:hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/branding/wit-logo-white.png" alt="WIT.ID" className="h-5 w-auto shrink-0 px-1" />
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
