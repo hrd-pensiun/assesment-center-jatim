@@ -15,6 +15,7 @@ import { SetupScreen } from "@/components/ai-training/setup-screen";
 import { QuizScreen } from "@/components/ai-training/quiz-screen";
 import { ResultScreen } from "@/components/ai-training/result-screen";
 import { ReportTemplate } from "@/components/ai-training/report-template";
+import { flushPendingSubmissions, submitWithRetry } from "@/lib/ai-training/submit-queue";
 
 type Screen = "setup" | "quiz" | "done";
 
@@ -106,6 +107,7 @@ export default function AiTrainingPage() {
       setJab(saved.jab);
       setTelp(saved.telp);
     }
+    flushPendingSubmissions();
   }, []);
 
   function goToStep(n: number) {
@@ -206,35 +208,31 @@ export default function AiTrainingPage() {
     setScreen("done");
     window.scrollTo(0, 0);
 
-    fetch("/api/assessment/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        module_code: mod,
-        module_name: MODULES[mod].name,
-        test_type: testType,
-        participant_nama: participant.nama,
-        participant_jabatan: participant.jab,
-        participant_telp: participant.telp,
-        main_answers: main.map((it) => ({
-          q: it.q,
-          options: it.opts.map((o) => o.text),
-          picked_index: it.pick,
-          correct_index: it.opts.findIndex((o) => o.ok),
-          is_correct: it.pick !== null && it.opts[it.pick].ok,
-        })),
-        bonus_answers: bonus.map((it) => ({
-          q: it.q,
-          options: it.opts.map((o) => o.text),
-          picked_index: it.pick,
-          correct_index: it.opts.findIndex((o) => o.ok),
-          is_correct: it.pick !== null && it.opts[it.pick].ok,
-        })),
-        essay_text: essay || null,
-        pre_score_ref: preScore,
-        band_label: band[2],
-      }),
-    }).catch(() => {});
+    submitWithRetry({
+      module_code: mod,
+      module_name: MODULES[mod].name,
+      test_type: testType,
+      participant_nama: participant.nama,
+      participant_jabatan: participant.jab,
+      participant_telp: participant.telp,
+      main_answers: main.map((it) => ({
+        q: it.q,
+        options: it.opts.map((o) => o.text),
+        picked_index: it.pick,
+        correct_index: it.opts.findIndex((o) => o.ok),
+        is_correct: it.pick !== null && it.opts[it.pick].ok,
+      })),
+      bonus_answers: bonus.map((it) => ({
+        q: it.q,
+        options: it.opts.map((o) => o.text),
+        picked_index: it.pick,
+        correct_index: it.opts.findIndex((o) => o.ok),
+        is_correct: it.pick !== null && it.opts[it.pick].ok,
+      })),
+      essay_text: essay || null,
+      pre_score_ref: preScore,
+      band_label: band[2],
+    });
   }
 
   async function handleDownloadPdf() {
