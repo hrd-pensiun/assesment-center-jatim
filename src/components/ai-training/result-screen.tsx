@@ -5,6 +5,7 @@ import type { QuizResult, TestType } from "@/lib/ai-training/quiz-types";
 interface ResultScreenProps {
   active: boolean;
   moduleName: string;
+  hasPractical: boolean;
   testType: TestType;
   result: QuizResult;
   pdfBusy: boolean;
@@ -12,7 +13,7 @@ interface ResultScreenProps {
   onAgain: () => void;
 }
 
-export function ResultScreen({ active, moduleName, testType, result, pdfBusy, onDownloadPdf, onAgain }: ResultScreenProps) {
+export function ResultScreen({ active, moduleName, hasPractical, testType, result, pdfBusy, onDownloadPdf, onAgain }: ResultScreenProps) {
   const pass = result.score >= 80;
   const isPost = testType === "post";
 
@@ -120,7 +121,9 @@ export function ResultScreen({ active, moduleName, testType, result, pdfBusy, on
 
         <div className="note">
           {isPost
-            ? "Practical challenge dinilai terpisah oleh fasilitator (maks +10 poin). Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."
+            ? hasPractical
+              ? "Practical challenge dinilai terpisah oleh fasilitator (maks +10 poin). Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."
+              : "Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."
             : "Simpan nilai ini. Masukkan kembali saat mengerjakan Post-Test untuk menghitung learning gain."}
         </div>
       </div>

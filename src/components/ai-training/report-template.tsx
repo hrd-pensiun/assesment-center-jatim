@@ -1,8 +1,8 @@
-import { MODULES } from "@/lib/ai-training/modules-data";
 import type { Participant, QuizResult, TestType } from "@/lib/ai-training/quiz-types";
+import type { ModuleMeta } from "@/lib/ai-training/quiz-variant";
 
 interface ReportTemplateProps {
-  mod: string;
+  meta: ModuleMeta;
   testType: TestType;
   participant: Participant;
   result: QuizResult;
@@ -12,8 +12,8 @@ interface ReportTemplateProps {
 
 // Mirrors buildReport()'s #report/#reportBody markup from wit-assessment.html
 // 1:1 (same classes from ai-training.css), so the exported PDF is identical.
-export function ReportTemplate({ mod, testType, participant, result, essay, generatedAt }: ReportTemplateProps) {
-  const m = MODULES[mod];
+export function ReportTemplate({ meta, testType, participant, result, essay, generatedAt }: ReportTemplateProps) {
+  const m = meta;
   const isPost = testType === "post";
   const d = generatedAt.toLocaleString("id-ID", {
     day: "2-digit",
@@ -130,33 +130,37 @@ export function ReportTemplate({ mod, testType, participant, result, essay, gene
           <>
             <h3>Bonus (+2 poin per jawaban benar)</h3>
             {rows(result.bonus)}
-            <h3>Super Bonus — {m.practical.title} (maks +10, dinilai fasilitator)</h3>
-            <div className="r-essay">{essay.trim() ? essay : "(tidak diisi)"}</div>
-            <table style={{ marginTop: 10 }}>
-              <tbody>
-                <tr>
-                  <th style={{ width: "60%" }}>Komponen rubrik</th>
-                  <th style={{ width: "20%" }}>Maks</th>
-                  <th style={{ width: "20%" }}></th>
-                </tr>
-                {m.practical.rubric.map((x, i) => (
-                  <tr key={i}>
-                    <td>{x[0]}</td>
-                    <td>{x[1]}</td>
-                    <td></td>
-                  </tr>
-                ))}
-                <tr>
-                  <td>
-                    <b>Total</b>
-                  </td>
-                  <td>
-                    <b>10</b>
-                  </td>
-                  <td></td>
-                </tr>
-              </tbody>
-            </table>
+            {m.practical ? (
+              <>
+                <h3>Super Bonus — {m.practical.title} (maks +10, dinilai fasilitator)</h3>
+                <div className="r-essay">{essay.trim() ? essay : "(tidak diisi)"}</div>
+                <table style={{ marginTop: 10 }}>
+                  <tbody>
+                    <tr>
+                      <th style={{ width: "60%" }}>Komponen rubrik</th>
+                      <th style={{ width: "20%" }}>Maks</th>
+                      <th style={{ width: "20%" }}></th>
+                    </tr>
+                    {m.practical.rubric.map((x, i) => (
+                      <tr key={i}>
+                        <td>{x[0]}</td>
+                        <td>{x[1]}</td>
+                        <td></td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td>
+                        <b>Total</b>
+                      </td>
+                      <td>
+                        <b>10</b>
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            ) : null}
             <div className="r-sign">
               <div>
                 <div className="line">Peserta — {participant.nama}</div>

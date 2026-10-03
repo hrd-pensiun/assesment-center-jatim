@@ -2,9 +2,11 @@
 
 import { MODULES } from "@/lib/ai-training/modules-data";
 import type { TestType } from "@/lib/ai-training/quiz-types";
+import type { QuizVariant } from "@/lib/ai-training/quiz-variant";
 
 interface SetupScreenProps {
   active: boolean;
+  merged: Extract<QuizVariant, { kind: "merged" }> | null;
   step: number;
   mod: string;
   testType: TestType;
@@ -26,10 +28,109 @@ interface SetupScreenProps {
 
 export function SetupScreen(props: SetupScreenProps) {
   const {
-    active, step, mod, testType, nama, jab, telp, preScoreInput, formErr,
+    active, merged, step, mod, testType, nama, jab, telp, preScoreInput, formErr,
     onSelectMod, onSelectType, onChangeNama, onChangeJab, onChangeTelp, onChangePreScore,
     onWizBack, onWizNext, onStart,
   } = props;
+
+  const participantCard = (
+    <div className="card">
+      <div className="field">
+        <label htmlFor="f-nama">Nama lengkap</label>
+        <input
+          id="f-nama"
+          type="text"
+          placeholder="Nama sesuai absensi"
+          autoComplete="name"
+          value={nama}
+          onChange={(e) => onChangeNama(e.target.value)}
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="f-jab">Jabatan</label>
+        <input
+          id="f-jab"
+          type="text"
+          placeholder="Contoh: Staff Marketing"
+          value={jab}
+          onChange={(e) => onChangeJab(e.target.value)}
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="f-telp">No. telepon</label>
+        <input
+          id="f-telp"
+          type="tel"
+          inputMode="tel"
+          placeholder="08xxxxxxxxxx"
+          autoComplete="tel"
+          value={telp}
+          onChange={(e) => onChangeTelp(e.target.value)}
+        />
+      </div>
+      {testType === "post" ? (
+        <div className="field" id="wrap-pre">
+          <label htmlFor="f-pre">Nilai Pre-Test (opsional — untuk learning gain)</label>
+          <input
+            id="f-pre"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={100}
+            placeholder="Contoh: 67"
+            value={preScoreInput}
+            onChange={(e) => onChangePreScore(e.target.value)}
+          />
+        </div>
+      ) : null}
+      <div className={`err${formErr ? " on" : ""}`}>Lengkapi nama, jabatan, dan nomor telepon dulu.</div>
+    </div>
+  );
+
+  if (merged) {
+    const isPre = merged.testType === "pre";
+    const moduleNames = Object.values(MODULES).map((m) => m.name).join(", ");
+    const mergedNote = isPre
+      ? `15 soal pilihan ganda (5 per modul). Durasi ${merged.durationMinutes} menit. Kerjakan sebelum sesi dimulai.`
+      : `15 soal utama (5 per modul) + 5 bonus studi kasus (+2 poin). Durasi ${merged.durationMinutes} menit. Passing grade 80.`;
+
+    return (
+      <section id="s-setup" className={`screen${active ? " on" : ""}`}>
+        <div className="hero">
+          <div className="eyebrow">WIT Training Assessment · {isPre ? "Pre-Test" : "Post-Test"}</div>
+          <h1>
+            {isPre ? "Pre-Test" : "Post-Test"} gabungan <span>semua modul.</span>
+          </h1>
+          <p>
+            Soal diambil dari {moduleNames}. Isi data peserta lalu mulai. Soal dan urutan pilihan jawaban diacak untuk
+            setiap peserta.
+          </p>
+        </div>
+
+        <div className="steps" style={{ display: "block", maxWidth: 420 }}>
+          <div className="step-panel active">
+            <div className="step-head">
+              <span className="step">01</span>
+              <b>Data peserta</b>
+            </div>
+            {participantCard}
+            <div className="note">{mergedNote}</div>
+          </div>
+        </div>
+
+        <div className="wiznav">
+          <button className="btn btn-primary" onClick={onStart}>
+            Mulai assessment
+          </button>
+        </div>
+        <div className="desk-start">
+          <button className="btn btn-primary" onClick={onStart}>
+            Mulai assessment
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   const m = MODULES[mod];
   const note =
@@ -98,57 +199,7 @@ export function SetupScreen(props: SetupScreenProps) {
             <span className="step">03</span>
             <b>Data peserta</b>
           </div>
-          <div className="card">
-            <div className="field">
-              <label htmlFor="f-nama">Nama lengkap</label>
-              <input
-                id="f-nama"
-                type="text"
-                placeholder="Nama sesuai absensi"
-                autoComplete="name"
-                value={nama}
-                onChange={(e) => onChangeNama(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="f-jab">Jabatan</label>
-              <input
-                id="f-jab"
-                type="text"
-                placeholder="Contoh: Staff Marketing"
-                value={jab}
-                onChange={(e) => onChangeJab(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="f-telp">No. telepon</label>
-              <input
-                id="f-telp"
-                type="tel"
-                inputMode="tel"
-                placeholder="08xxxxxxxxxx"
-                autoComplete="tel"
-                value={telp}
-                onChange={(e) => onChangeTelp(e.target.value)}
-              />
-            </div>
-            {testType === "post" ? (
-              <div className="field" id="wrap-pre">
-                <label htmlFor="f-pre">Nilai Pre-Test (opsional — untuk learning gain)</label>
-                <input
-                  id="f-pre"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={100}
-                  placeholder="Contoh: 67"
-                  value={preScoreInput}
-                  onChange={(e) => onChangePreScore(e.target.value)}
-                />
-              </div>
-            ) : null}
-            <div className={`err${formErr ? " on" : ""}`}>Lengkapi nama, jabatan, dan nomor telepon dulu.</div>
-          </div>
+          {participantCard}
         </div>
       </div>
 

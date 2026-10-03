@@ -1,17 +1,19 @@
 "use client";
 
-import { MODULES } from "@/lib/ai-training/modules-data";
 import type { QuizItem, TestType } from "@/lib/ai-training/quiz-types";
+import type { ModuleMeta } from "@/lib/ai-training/quiz-variant";
 
 const KEYS = ["A", "B", "C", "D"];
+const TIMER_WARNING_SEC = 120;
 
 interface QuizScreenProps {
   active: boolean;
-  mod: string;
+  meta: ModuleMeta;
   testType: TestType;
   items: QuizItem[];
   idx: number;
   essay: string;
+  timeLeftSec: number | null;
   onPick: (optionIndex: number) => void;
   onEssayChange: (value: string) => void;
   onBack: () => void;
@@ -19,12 +21,32 @@ interface QuizScreenProps {
   onJump: (index: number) => void;
 }
 
+function formatClock(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// Reminder only: running out of time never auto-submits or locks answers.
+function QuizTimer({ timeLeftSec }: { timeLeftSec: number }) {
+  const expired = timeLeftSec <= 0;
+  const warning = !expired && timeLeftSec <= TIMER_WARNING_SEC;
+  return (
+    <span
+      aria-live="polite"
+      style={{ color: expired || warning ? "var(--red)" : "var(--muted)", marginRight: 10 }}
+    >
+      {expired ? "Waktu habis" : `⏱ ${formatClock(timeLeftSec)}`}
+    </span>
+  );
+}
+
 export function QuizScreen(props: QuizScreenProps) {
-  const { active, mod, testType, items, idx, essay, onPick, onEssayChange, onBack, onNext, onJump } = props;
+  const { active, meta, testType, items, idx, essay, timeLeftSec, onPick, onEssayChange, onBack, onNext, onJump } = props;
   if (items.length === 0) return null;
 
   const it = items[idx];
-  const m = MODULES[mod];
+  const m = meta;
   const total = items.length;
 
   return (
@@ -36,6 +58,7 @@ export function QuizScreen(props: QuizScreenProps) {
               {m.name} · {testType === "pre" ? "Pre-Test" : "Post-Test"}
             </span>
             <span className="cnt">
+              {timeLeftSec !== null ? <QuizTimer timeLeftSec={timeLeftSec} /> : null}
               {idx + 1} / {total}
             </span>
           </div>
@@ -46,28 +69,30 @@ export function QuizScreen(props: QuizScreenProps) {
 
         <div id="qBody">
           {it.kind === "essay" ? (
-            <>
-              <span className="qtag bonus">SUPER BONUS · +10 POIN</span>
-              <div className="qtext">{m.practical.title}</div>
-              <div className="brief">
-                <div className="small muted">{m.practical.scenario}</div>
-                <ol>
-                  {m.practical.need.map((n, i) => (
-                    <li key={i}>{n}</li>
-                  ))}
-                </ol>
-                {m.practical.extra ? <div className="small muted" style={{ marginTop: 10 }}>{m.practical.extra}</div> : null}
-              </div>
-              <textarea
-                id="essay"
-                placeholder="Tulis jawaban Anda di sini…"
-                value={essay}
-                onChange={(e) => onEssayChange(e.target.value)}
-              />
-              <div className="note">
-                Dinilai fasilitator dengan rubrik: {m.practical.rubric.map((r) => `${r[0]} (${r[1]})`).join(" · ")}.
-              </div>
-            </>
+            m.practical ? (
+              <>
+                <span className="qtag bonus">SUPER BONUS · +10 POIN</span>
+                <div className="qtext">{m.practical.title}</div>
+                <div className="brief">
+                  <div className="small muted">{m.practical.scenario}</div>
+                  <ol>
+                    {m.practical.need.map((n, i) => (
+                      <li key={i}>{n}</li>
+                    ))}
+                  </ol>
+                  {m.practical.extra ? <div className="small muted" style={{ marginTop: 10 }}>{m.practical.extra}</div> : null}
+                </div>
+                <textarea
+                  id="essay"
+                  placeholder="Tulis jawaban Anda di sini…"
+                  value={essay}
+                  onChange={(e) => onEssayChange(e.target.value)}
+                />
+                <div className="note">
+                  Dinilai fasilitator dengan rubrik: {m.practical.rubric.map((r) => `${r[0]} (${r[1]})`).join(" · ")}.
+                </div>
+              </>
+            ) : null
           ) : (
             <>
               <span className={`qtag ${it.kind === "bonus" ? "bonus" : "main"}`}>
