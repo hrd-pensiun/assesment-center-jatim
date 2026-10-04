@@ -28,13 +28,27 @@ function formatClock(sec: number) {
 }
 
 // Reminder only: running out of time never auto-submits or locks answers.
+// Always red and large so it is the most visible thing in the header; it
+// replaces the "x / total" counter on timed tests (the number dots below
+// already show progress).
 function QuizTimer({ timeLeftSec }: { timeLeftSec: number }) {
   const expired = timeLeftSec <= 0;
-  const warning = !expired && timeLeftSec <= TIMER_WARNING_SEC;
+  const urgent = expired || timeLeftSec <= TIMER_WARNING_SEC;
   return (
     <span
       aria-live="polite"
-      style={{ color: expired || warning ? "var(--red)" : "var(--muted)", marginRight: 10 }}
+      style={{
+        display: "inline-block",
+        padding: "4px 12px",
+        borderRadius: 999,
+        background: urgent ? "var(--red)" : "var(--red-soft)",
+        color: urgent ? "#fff" : "var(--red)",
+        border: "1px solid var(--red)",
+        fontSize: 17,
+        fontWeight: 800,
+        letterSpacing: ".02em",
+        whiteSpace: "nowrap",
+      }}
     >
       {expired ? "Waktu habis" : `⏱ ${formatClock(timeLeftSec)}`}
     </span>
@@ -59,8 +73,7 @@ export function QuizScreen(props: QuizScreenProps) {
               {m.name} · {testType === "pre" ? "Pre-Test" : "Post-Test"}
             </span>
             <span className="cnt">
-              {timeLeftSec !== null ? <QuizTimer timeLeftSec={timeLeftSec} /> : null}
-              {idx + 1} / {total}
+              {timeLeftSec !== null ? <QuizTimer timeLeftSec={timeLeftSec} /> : `${idx + 1} / ${total}`}
             </span>
           </div>
           <div className="rail">

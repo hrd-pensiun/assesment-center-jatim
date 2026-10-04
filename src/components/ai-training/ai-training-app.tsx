@@ -15,6 +15,7 @@ import { SetupScreen } from "@/components/ai-training/setup-screen";
 import { QuizScreen } from "@/components/ai-training/quiz-screen";
 import { ResultScreen } from "@/components/ai-training/result-screen";
 import { ReportTemplate } from "@/components/ai-training/report-template";
+import { UnansweredDialog } from "@/components/ai-training/unanswered-dialog";
 import { flushPendingSubmissions, submitWithRetry } from "@/lib/ai-training/submit-queue";
 
 type Screen = "setup" | "quiz" | "done";
@@ -77,6 +78,7 @@ export function AiTrainingApp({ variant }: { variant: QuizVariant }) {
 
   const [result, setResult] = useState<QuizResult | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const meta = getModuleMeta(mod);
@@ -161,7 +163,28 @@ export function AiTrainingApp({ variant }: { variant: QuizVariant }) {
   }
   function handleNext() {
     if (idx < items.length - 1) setIdx(idx + 1);
+    else requestFinish();
+  }
+
+  // Same labels as the number dots under the question.
+  function unansweredIndexes() {
+    return items.flatMap((it, i) => (it.kind !== "essay" && it.pick === null ? [i] : []));
+  }
+  function itemLabel(i: number) {
+    return items[i].kind === "bonus" ? `B${i - 14}` : String(i + 1);
+  }
+  function requestFinish() {
+    if (unansweredIndexes().length > 0) setConfirmOpen(true);
     else finish(items);
+  }
+  function handleReviewUnanswered() {
+    const first = unansweredIndexes()[0];
+    setConfirmOpen(false);
+    if (first !== undefined) setIdx(first);
+  }
+  function handleConfirmFinish() {
+    setConfirmOpen(false);
+    finish(items);
   }
   function handleJump(i: number) {
     setIdx(i);
@@ -304,6 +327,13 @@ export function AiTrainingApp({ variant }: { variant: QuizVariant }) {
           onBack={handleBack}
           onNext={handleNext}
           onJump={handleJump}
+        />
+
+        <UnansweredDialog
+          open={confirmOpen}
+          labels={unansweredIndexes().map(itemLabel)}
+          onReview={handleReviewUnanswered}
+          onConfirm={handleConfirmFinish}
         />
 
         {result ? (
