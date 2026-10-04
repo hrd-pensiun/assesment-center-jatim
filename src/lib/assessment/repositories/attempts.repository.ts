@@ -83,11 +83,11 @@ export async function listAttempts(
   return applyAttemptFilters(query, filters);
 }
 
-/** Lightweight rows for the scorecards (same filters, only the columns needed). */
+/** Lightweight rows (no answers JSON) for scorecards and the PDF summary, same filters as the list. */
 export async function listAttemptStatRows(client: InsForgeClient, filters: AttemptFilters, from: number, to: number) {
   const query = client.database
     .from("assessment_attempts")
-    .select("participant_nama, participant_telp, test_type, score")
+    .select("participant_nama, participant_jabatan, participant_telp, module_name, test_type, score, is_passed, created_at")
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .range(from, to);

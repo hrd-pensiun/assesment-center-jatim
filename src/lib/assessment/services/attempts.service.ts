@@ -11,6 +11,7 @@ import { createInsForgeAdminClient } from "@/lib/insforge/admin";
 import {
   EDITABLE_PARTICIPANT_FIELDS,
   type AttemptFilters,
+  type AttemptSummaryRow,
   type EditableParticipantField,
 } from "@/lib/assessment/types";
 
@@ -38,33 +39,36 @@ export interface AttemptStats {
  * visible page). A participant is counted once by name + phone, so
  * someone who took both pre- and post-test is one participant.
  */
-export async function getAttemptStats(client: InsForgeClient, filters: AttemptFilters): Promise<AttemptStats> {
-  const participants = new Set<string>();
-  let totalPre = 0;
-  let totalPost = 0;
-  let scoreSum = 0;
-  let totalAttempts = 0;
-
+/** Every row matching the filters, light columns only, newest first. */
+export async function getAttemptSummaryRows(
+  client: InsForgeClient,
+  filters: AttemptFilters,
+): Promise<AttemptSummaryRow[]> {
+  const all: AttemptSummaryRow[] = [];
   for (let from = 0; ; from += STATS_PAGE_SIZE) {
     const { data, error } = await listAttemptStatRows(client, filters, from, from + STATS_PAGE_SIZE - 1);
-    if (error) throw new Error(error.message ?? "Gagal memuat statistik.");
-    const rows = data ?? [];
-    for (const r of rows) {
-      participants.add(`${String(r.participant_nama).trim().toLowerCase()}|${String(r.participant_telp).replace(/\D/g, "")}`);
-      if (r.test_type === "pre") totalPre += 1;
-      else totalPost += 1;
-      scoreSum += r.score;
-      totalAttempts += 1;
-    }
+    if (error) throw new Error(error.message ?? "Gagal memuat data ringkasan.");
+    const rows = (data ?? []) as AttemptSummaryRow[];
+    all.push(...rows);
     if (rows.length < STATS_PAGE_SIZE) break;
   }
+  return all;
+}
+
+export async function getAttemptStats(client: InsForgeClient, filters: AttemptFilters): Promise<AttemptStats> {
+  const rows = await getAttemptSummaryRows(client, filters);
+  const participants = new Set(
+    rows.map((r) => `${r.participant_nama.trim().toLowerCase()}|${r.participant_telp.replace(/\D/g, "")}`),
+  );
+  const totalPre = rows.filter((r) => r.test_type === "pre").length;
+  const scoreSum = rows.reduce((sum, r) => sum + r.score, 0);
 
   return {
     totalParticipants: participants.size,
-    totalAttempts,
+    totalAttempts: rows.length,
     totalPre,
-    totalPost,
-    averageScore: totalAttempts > 0 ? Math.round((scoreSum / totalAttempts) * 10) / 10 : null,
+    totalPost: rows.length - totalPre,
+    averageScore: rows.length > 0 ? Math.round((scoreSum / rows.length) * 10) / 10 : null,
   };
 }
 

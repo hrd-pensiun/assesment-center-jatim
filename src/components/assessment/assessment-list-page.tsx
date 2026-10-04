@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   BarChart3,
   ChevronLeft,
@@ -9,6 +10,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Download,
+  FileText,
   RotateCcw,
   Search,
   Users,
@@ -26,7 +28,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TestTypeBadge, PassBadge } from "@/components/assessment/status-badges";
-import type { AssessmentAttempt } from "@/lib/assessment/types";
+import type { AssessmentAttempt, AttemptSummaryRow } from "@/lib/assessment/types";
 
 interface ModuleOption {
   module_code: string;
@@ -109,6 +111,8 @@ export function AssessmentListPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState("10");
 
+  const [pdfBusy, setPdfBusy] = useState(false);
+
   const requestId = useRef(0);
 
   const filterQuery = useMemo(() => {
@@ -187,6 +191,36 @@ export function AssessmentListPage() {
     setPage(1);
   }
 
+  async function handleExportPdf() {
+    setPdfBusy(true);
+    try {
+      const res = await fetch(`/api/admin/assessment/attempts/report?${filterQuery.toString()}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error ?? "Gagal memuat data laporan.");
+      const rows: AttemptSummaryRow[] = body.rows ?? [];
+      if (rows.length === 0) {
+        toast.error("Tidak ada data untuk dibuat laporan.");
+        return;
+      }
+
+      const filterLines: string[] = [];
+      if (search.trim()) filterLines.push(`Cari: "${search.trim()}"`);
+      if (moduleFilter !== ALL)
+        filterLines.push(`Modul: ${modules.find((m) => m.module_code === moduleFilter)?.module_name ?? moduleFilter}`);
+      if (typeFilter !== ALL) filterLines.push(`Tipe: ${typeFilter === "pre" ? "Pre-Test" : "Post-Test"}`);
+      if (passFilter !== ALL) filterLines.push(`Status: ${passFilter === "true" ? "Lulus" : "Belum lulus"}`);
+      if (dateFrom || dateTo) filterLines.push(`Tanggal: ${dateFrom || "..."} s/d ${dateTo || "..."}`);
+
+      const { downloadSummaryReport } = await import("@/lib/assessment/summary-report");
+      await downloadSummaryReport({ rows, filterLines });
+      toast.success("Laporan PDF berhasil dibuat.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal membuat laporan PDF.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
   const exportHref = `/api/admin/assessment/attempts/export?${filterQuery.toString()}`;
   const offset = (page - 1) * Number(pageSize);
   const from = total === 0 ? 0 : offset + 1;
@@ -203,12 +237,23 @@ export function AssessmentListPage() {
             Semua hasil pre-test dan post-test yang masuk dari halaman assessment.
           </p>
         </div>
-        <a href={exportHref}>
-          <Button variant="outline" className="rounded-full">
-            <Download className="size-4" />
-            Export Excel
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={handleExportPdf}
+            disabled={pdfBusy || loading || total === 0}
+          >
+            <FileText className="size-4" />
+            {pdfBusy ? "Menyiapkan PDF..." : "Export PDF"}
           </Button>
-        </a>
+          <a href={exportHref}>
+            <Button variant="outline" className="rounded-full">
+              <Download className="size-4" />
+              Export Excel
+            </Button>
+          </a>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

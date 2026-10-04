@@ -72,3 +72,14 @@ export const EDITABLE_PARTICIPANT_FIELDS = [
 ] as const;
 
 export type EditableParticipantField = (typeof EDITABLE_PARTICIPANT_FIELDS)[number];
+
+export interface AttemptSummaryRow {
+  participant_nama: string;
+  participant_jabatan: string;
+  participant_telp: string;
+  module_name: string;
+  test_type: TestType;
+  score: number;
+  is_passed: boolean;
+  created_at: string;
+}
