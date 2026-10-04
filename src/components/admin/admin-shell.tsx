@@ -31,7 +31,7 @@ export function AdminShell({
   }
 
   return (
-    <div className="relative flex min-h-screen gap-4 bg-surface p-3 lg:p-4">
+    <div className="relative flex h-dvh gap-4 overflow-hidden bg-surface p-3 lg:p-4">
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 -z-10"
@@ -42,7 +42,7 @@ export function AdminShell({
       />
 
       {/* Floating dark rail */}
-      <aside className="hidden w-60 shrink-0 flex-col rounded-[28px] bg-ink p-3 text-on-ink shadow-float md:flex">
+      <aside className="hidden h-full w-60 shrink-0 flex-col rounded-[28px] bg-ink p-3 text-on-ink shadow-float md:flex">
         <div className="flex items-center gap-2 px-2 py-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/branding/wit-logo-white.png" alt="WIT.ID" className="h-6 w-auto" />
@@ -121,7 +121,7 @@ export function AdminShell({
         </button>
       </div>
 
-      <main className="min-w-0 flex-1 pt-14 md:pt-0">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto pt-14 md:pt-0">{children}</main>
     </div>
   );
 }

@@ -49,6 +49,8 @@ export interface AttemptFilters {
   test_type?: TestType;
   is_passed?: boolean;
   q?: string;
+  date_from?: string;
+  date_to?: string;
   page?: number;
   pageSize?: number;
 }

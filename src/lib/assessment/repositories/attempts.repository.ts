@@ -31,25 +31,68 @@ export async function insertAttempt(client: InsForgeClient, row: InsertAttemptRo
   return client.database.from("assessment_attempts").insert([row]);
 }
 
-export async function listAttempts(client: InsForgeClient, filters: AttemptFilters) {
+// Indonesian workshop: day boundaries are interpreted in WIB (UTC+7).
+const WIB_OFFSET = "+07:00";
+
+function applyAttemptFilters<
+  T extends {
+    eq: (c: string, v: unknown) => T;
+    gte: (c: string, v: string) => T;
+    lte: (c: string, v: string) => T;
+    or: (f: string) => T;
+  },
+>(query: T, filters: AttemptFilters): T {
+  let q = query;
+  if (filters.module_code) q = q.eq("module_code", filters.module_code);
+  if (filters.test_type) q = q.eq("test_type", filters.test_type);
+  if (filters.is_passed !== undefined) {
+    // Lulus / belum lulus only exists for post-tests.
+    q = q.eq("test_type", "post").eq("is_passed", filters.is_passed);
+  }
+  if (filters.date_from) q = q.gte("created_at", `${filters.date_from}T00:00:00${WIB_OFFSET}`);
+  if (filters.date_to) q = q.lte("created_at", `${filters.date_to}T23:59:59.999${WIB_OFFSET}`);
+  if (filters.q) {
+    // Strip characters that would break PostgREST's or() syntax / wildcards.
+    const term = filters.q.replace(/[,()*%\\]/g, " ").trim();
+    if (term) {
+      q = q.or(
+        `participant_nama.ilike.*${term}*,participant_jabatan.ilike.*${term}*,participant_telp.ilike.*${term}*`,
+      );
+    }
+  }
+  return q;
+}
+
+export async function listAttempts(
+  client: InsForgeClient,
+  filters: AttemptFilters,
+  options: { withCount?: boolean } = {},
+) {
   const page = filters.page && filters.page > 0 ? filters.page : 1;
   const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 20;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = client.database
+  const query = client.database
     .from("assessment_attempts")
-    .select(ATTEMPT_COLUMNS)
+    .select(ATTEMPT_COLUMNS, options.withCount ? { count: "exact" } : undefined)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .range(from, to);
 
-  if (filters.module_code) query = query.eq("module_code", filters.module_code);
-  if (filters.test_type) query = query.eq("test_type", filters.test_type);
-  if (filters.is_passed !== undefined) query = query.eq("is_passed", filters.is_passed);
-  if (filters.q) query = query.ilike("participant_nama", `%${filters.q}%`);
+  return applyAttemptFilters(query, filters);
+}
 
-  return query;
+/** Lightweight rows for the scorecards (same filters, only the columns needed). */
+export async function listAttemptStatRows(client: InsForgeClient, filters: AttemptFilters, from: number, to: number) {
+  const query = client.database
+    .from("assessment_attempts")
+    .select("participant_nama, participant_telp, test_type, score")
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(from, to);
+
+  return applyAttemptFilters(query, filters);
 }
 
 export async function getAttemptById(client: InsForgeClient, id: string) {

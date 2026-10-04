@@ -2,6 +2,7 @@ import type { InsForgeClient } from "@insforge/sdk";
 import {
   deleteAttempt,
   getAttemptById,
+  listAttemptStatRows,
   listAttempts,
   updateAttemptParticipant,
 } from "@/lib/assessment/repositories/attempts.repository";
@@ -17,9 +18,54 @@ export class AttemptNotFoundError extends Error {}
 export class AttemptValidationError extends Error {}
 
 export async function getAttemptsList(client: InsForgeClient, filters: AttemptFilters) {
-  const { data, error } = await listAttempts(client, filters);
+  const { data, error, count } = await listAttempts(client, filters, { withCount: true });
   if (error) throw new Error(error.message ?? "Gagal memuat daftar peserta.");
-  return data ?? [];
+  return { attempts: data ?? [], total: count ?? 0 };
+}
+
+const STATS_PAGE_SIZE = 1000;
+
+export interface AttemptStats {
+  totalParticipants: number;
+  totalAttempts: number;
+  totalPre: number;
+  totalPost: number;
+  averageScore: number | null;
+}
+
+/**
+ * Scorecard numbers for everything matching the filters (not just the
+ * visible page). A participant is counted once by name + phone, so
+ * someone who took both pre- and post-test is one participant.
+ */
+export async function getAttemptStats(client: InsForgeClient, filters: AttemptFilters): Promise<AttemptStats> {
+  const participants = new Set<string>();
+  let totalPre = 0;
+  let totalPost = 0;
+  let scoreSum = 0;
+  let totalAttempts = 0;
+
+  for (let from = 0; ; from += STATS_PAGE_SIZE) {
+    const { data, error } = await listAttemptStatRows(client, filters, from, from + STATS_PAGE_SIZE - 1);
+    if (error) throw new Error(error.message ?? "Gagal memuat statistik.");
+    const rows = data ?? [];
+    for (const r of rows) {
+      participants.add(`${String(r.participant_nama).trim().toLowerCase()}|${String(r.participant_telp).replace(/\D/g, "")}`);
+      if (r.test_type === "pre") totalPre += 1;
+      else totalPost += 1;
+      scoreSum += r.score;
+      totalAttempts += 1;
+    }
+    if (rows.length < STATS_PAGE_SIZE) break;
+  }
+
+  return {
+    totalParticipants: participants.size,
+    totalAttempts,
+    totalPre,
+    totalPost,
+    averageScore: totalAttempts > 0 ? Math.round((scoreSum / totalAttempts) * 10) / 10 : null,
+  };
 }
 
 export async function getAttemptDetail(client: InsForgeClient, id: string) {
