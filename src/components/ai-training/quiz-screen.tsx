@@ -48,6 +48,7 @@ export function QuizScreen(props: QuizScreenProps) {
   const it = items[idx];
   const m = meta;
   const total = items.length;
+  const isLast = idx === total - 1;
 
   return (
     <section id="s-quiz" className={`screen${active ? " on" : ""}`}>
@@ -105,12 +106,20 @@ export function QuizScreen(props: QuizScreenProps) {
                     key={i}
                     type="button"
                     className={`opt${it.pick === i ? " sel" : ""}`}
+                    aria-pressed={it.pick === i}
                     onClick={() => onPick(i)}
                   >
                     <span className="key">{KEYS[i]}</span>
                     <span className="val">{o.text}</span>
                   </button>
                 ))}
+              </div>
+              {/* Stays on screen after picking: the participant can re-read
+                  the question and change the answer before moving on. */}
+              <div className={`pickhint${it.pick !== null ? " on" : ""}`} aria-live="polite">
+                {it.pick !== null
+                  ? `Jawaban ${KEYS[it.pick]} tersimpan — masih bisa diganti sebelum lanjut.`
+                  : "Pilih A/B/C/D dulu. Halaman tidak pindah otomatis."}
               </div>
             </>
           )}
@@ -120,8 +129,20 @@ export function QuizScreen(props: QuizScreenProps) {
           <button className="btn btn-ghost back" style={{ visibility: idx === 0 ? "hidden" : "visible" }} aria-label="Soal sebelumnya" onClick={onBack}>
             ←
           </button>
+          {/* Lewati keeps its previous meaning: move on without answering. */}
+          {isLast ? null : (
+            <button className="btn btn-ghost" onClick={onNext}>
+              Lewati
+            </button>
+          )}
+        </div>
+
+        {/* Explicit forward action on its own row: picking an option no longer
+            advances by itself, so this is how the participant leaves a question
+            after checking (and re-checking) their answer. */}
+        <div className="nav nav-next">
           <button className="btn btn-primary" onClick={onNext}>
-            {idx === total - 1 ? "Selesai & lihat hasil" : "Lewati"}
+            {isLast ? "Selesai & lihat hasil" : "Pertanyaan berikutnya →"}
           </button>
         </div>
 

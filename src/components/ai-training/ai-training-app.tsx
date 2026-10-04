@@ -25,8 +25,9 @@ const isMobile = () =>
 // Remembers the last participant's data on this device only (no login,
 // no server round-trip) so someone doing Pre-Test then Post-Test back to
 // back doesn't have to retype nama/jabatan/telp. Shared across all
-// /ai-training links. Cleared explicitly when a different participant
-// starts ("Assessment peserta lain").
+// /ai-training links. There is deliberately no "start over" button on the
+// result screen anymore: the setup form is editable, so a different person
+// on the same device just types over the prefilled values.
 const PARTICIPANT_STORAGE_KEY = "wit-ai-training-participant";
 
 function readSavedParticipant(): Participant | null {
@@ -48,14 +49,6 @@ function saveParticipant(p: Participant) {
     window.localStorage.setItem(PARTICIPANT_STORAGE_KEY, JSON.stringify(p));
   } catch {
     // ignore (private browsing, storage disabled, etc.)
-  }
-}
-
-function clearSavedParticipant() {
-  try {
-    window.localStorage.removeItem(PARTICIPANT_STORAGE_KEY);
-  } catch {
-    // ignore
   }
 }
 
@@ -149,25 +142,18 @@ export function AiTrainingApp({ variant }: { variant: QuizVariant }) {
     window.scrollTo(0, 0);
   }
 
+  // Picking an option deliberately does NOT advance anymore: the participant
+  // stays on the same question so they can re-read the stem and change their
+  // answer. Re-picking just overwrites `pick`. Leaving the question is now an
+  // explicit action ("Pertanyaan berikutnya" / "Lewati" / the number dots) —
+  // and finish() can only ever be reached from handleNext on the last item, so
+  // the old pick-timer that silently auto-submitted the last question is gone.
   function handlePick(optionIndex: number) {
     const current = items[idx];
     if (current.kind === "essay") return;
-    // Compute the updated array synchronously (not via a setState updater)
-    // so the setTimeout below can pass the fresh snapshot straight into
-    // finish() — reading `items` state again after the timeout would race
-    // a stale closure and silently drop the very last answer.
-    const updatedItems = items.map((it, i) =>
+    setItems(items.map((it, i) =>
       i === idx && it.kind !== "essay" ? { ...it, pick: optionIndex } : it,
-    );
-    setItems(updatedItems);
-    const pickedIdx = idx;
-    setTimeout(() => {
-      if (pickedIdx < updatedItems.length - 1) {
-        setIdx(pickedIdx + 1);
-      } else {
-        finish(updatedItems);
-      }
-    }, 260);
+    ));
   }
 
   function handleBack() {
@@ -270,19 +256,6 @@ export function AiTrainingApp({ variant }: { variant: QuizVariant }) {
     }
   }
 
-  function handleAgain() {
-    clearSavedParticipant();
-    setNama("");
-    setJab("");
-    setTelp("");
-    setPreScoreInput("");
-    setFormErr(false);
-    setResult(null);
-    setQuizStartedAt(null);
-    goToStep(merged ? 3 : 1);
-    setScreen("setup");
-  }
-
   return (
     <>
       <header className="top">
@@ -342,7 +315,6 @@ export function AiTrainingApp({ variant }: { variant: QuizVariant }) {
             result={result}
             pdfBusy={pdfBusy}
             onDownloadPdf={handleDownloadPdf}
-            onAgain={handleAgain}
           />
         ) : null}
       </div>

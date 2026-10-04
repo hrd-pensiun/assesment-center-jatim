@@ -10,10 +10,9 @@ interface ResultScreenProps {
   result: QuizResult;
   pdfBusy: boolean;
   onDownloadPdf: () => void;
-  onAgain: () => void;
 }
 
-export function ResultScreen({ active, moduleName, hasPractical, testType, result, pdfBusy, onDownloadPdf, onAgain }: ResultScreenProps) {
+export function ResultScreen({ active, moduleName, hasPractical, testType, result, pdfBusy, onDownloadPdf }: ResultScreenProps) {
   const pass = result.score >= 80;
   const isPost = testType === "post";
 
@@ -35,6 +34,17 @@ export function ResultScreen({ active, moduleName, hasPractical, testType, resul
           <div className="small muted" style={{ marginTop: 10 }}>
             {result.band[3]}
           </div>
+          {/* The "save this score" reminder lives up here, right under the
+              level band, instead of at the very bottom of the page: on a
+              pre-test the score is worthless later unless the participant
+              keeps it, and people stop reading once they hit the download
+              button. */}
+          {!isPost ? (
+            <div className="save-note">
+              <b>Simpan nilai ini.</b> Unduh hasilnya sebagai PDF untuk arsip, lalu masukkan nilai ini saat
+              mengerjakan Post-Test supaya learning gain Anda bisa dihitung.
+            </div>
+          ) : null}
         </div>
 
         <div className="stats">
@@ -78,9 +88,6 @@ export function ResultScreen({ active, moduleName, hasPractical, testType, resul
           <button className="btn btn-primary" onClick={onDownloadPdf} disabled={pdfBusy}>
             {pdfBusy ? "Menyiapkan PDF…" : "Unduh hasil (PDF)"}
           </button>
-          <button className="btn btn-ghost" onClick={onAgain}>
-            Assessment peserta lain
-          </button>
         </div>
 
         <details className="pack">
@@ -119,13 +126,15 @@ export function ResultScreen({ active, moduleName, hasPractical, testType, resul
           </div>
         </details>
 
-        <div className="note">
-          {isPost
-            ? hasPractical
+        {/* Pre-test used to repeat the save-score reminder here; it now sits
+            under the level band so it is seen before the download button. */}
+        {isPost ? (
+          <div className="note">
+            {hasPractical
               ? "Practical challenge dinilai terpisah oleh fasilitator (maks +10 poin). Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."
-              : "Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."
-            : "Simpan nilai ini. Masukkan kembali saat mengerjakan Post-Test untuk menghitung learning gain."}
-        </div>
+              : "Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."}
+          </div>
+        ) : null}
       </div>
     </section>
   );

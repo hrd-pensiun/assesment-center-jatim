@@ -136,7 +136,9 @@ textarea:focus{border-color:var(--red);outline:none}
 .dot{width:29px;height:29px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);display:grid;place-items:center}
 .dot.done{background:var(--surface-2);color:var(--text);border-color:var(--muted)}
 .dot.now{border-color:var(--red);color:var(--red)}
-
+.pickhint{font-size:12px;color:var(--muted);margin-top:11px;padding-left:12px;border-left:2px solid var(--line);line-height:1.5}
+.pickhint.on{color:var(--text);border-left-color:var(--red)}
+.nav-next{margin-top:10px}
 /* ---------- result ---------- */
 .score-hero{text-align:center;padding:28px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-bottom:12px;position:relative;overflow:hidden}
 .score-hero::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,var(--red-soft),transparent 65%);pointer-events:none}
@@ -145,6 +147,13 @@ textarea:focus{border-color:var(--red);outline:none}
 .band{display:inline-block;margin-top:12px;padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:700;letter-spacing:.05em}
 .band.pass{background:rgba(34,181,115,.16);color:var(--green)}
 .band.fail{background:var(--red-soft);color:var(--red)}
+/* Sits right under the level band: on a pre-test the score is only useful
+   later if the participant keeps it, so the reminder is placed before the
+   download button instead of at the very bottom of the page. */
+.save-note{margin-top:14px;padding:11px 13px;text-align:left;background:rgba(240,168,30,.10);border:1px solid rgba(240,168,30,.35);border-radius:10px;font-size:12.5px;line-height:1.55;color:var(--text);position:relative;z-index:1}
+.save-note b{color:var(--amber)}
+[data-theme="light"] .save-note{background:rgba(184,119,8,.09);border-color:rgba(184,119,8,.35)}
+[data-theme="light"] .save-note b{color:var(--amber)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 10px;text-align:center}
 .stat b{font-family:Archivo;font-size:21px;display:block}
