@@ -58,6 +58,7 @@ function QuizTimer({ timeLeftSec }: { timeLeftSec: number }) {
 export function QuizScreen(props: QuizScreenProps) {
   const { active, meta, testType, items, idx, essay, timeLeftSec, onPick, onEssayChange, onBack, onNext, onJump } = props;
   if (items.length === 0) return null;
+  const mainCount = items.filter((it) => it.kind === "main").length;
 
   const it = items[idx];
   const m = meta;
@@ -110,7 +111,7 @@ export function QuizScreen(props: QuizScreenProps) {
           ) : (
             <>
               <span className={`qtag ${it.kind === "bonus" ? "bonus" : "main"}`}>
-                {it.kind === "bonus" ? `BONUS ${idx - 14} · +2 POIN` : `SOAL ${idx + 1} DARI 15`}
+                {it.kind === "bonus" ? `BONUS ${idx - mainCount + 1} · +2 POIN` : `SOAL ${idx + 1} DARI ${mainCount}`}
               </span>
               <div className="qtext">{it.q}</div>
               <div className="opts">
@@ -162,7 +163,7 @@ export function QuizScreen(props: QuizScreenProps) {
         <div className="dots" id="qDots">
           {items.map((dotItem, i) => {
             const done = dotItem.kind === "essay" ? essay.trim().length > 0 : dotItem.pick !== null;
-            const lbl = dotItem.kind === "essay" ? "★" : dotItem.kind === "bonus" ? `B${i - 14}` : i + 1;
+            const lbl = dotItem.kind === "essay" ? "★" : dotItem.kind === "bonus" ? `B${i - mainCount + 1}` : i + 1;
             return (
               <button
                 key={i}

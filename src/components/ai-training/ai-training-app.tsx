@@ -170,8 +170,9 @@ export function AiTrainingApp({ variant }: { variant: QuizVariant }) {
   function unansweredIndexes() {
     return items.flatMap((it, i) => (it.kind !== "essay" && it.pick === null ? [i] : []));
   }
+  const mainCount = items.filter((it) => it.kind === "main").length;
   function itemLabel(i: number) {
-    return items[i].kind === "bonus" ? `B${i - 14}` : String(i + 1);
+    return items[i].kind === "bonus" ? `B${i - mainCount + 1}` : String(i + 1);
   }
   function requestFinish() {
     if (unansweredIndexes().length > 0) setConfirmOpen(true);

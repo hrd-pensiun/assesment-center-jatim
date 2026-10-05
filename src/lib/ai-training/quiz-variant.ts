@@ -7,7 +7,7 @@ export type QuizVariant =
   | { kind: "merged"; testType: TestType; durationMinutes: number };
 
 export const MERGED_MODULE_CODE = "all";
-const MERGED_MODULE_KEYS = ["m1", "m2", "m3"] as const;
+type MergedModuleKey = "m1" | "m2" | "m3";
 
 export interface ModuleMeta {
   code: string;
@@ -22,25 +22,35 @@ const MERGED_META: ModuleMeta = {
 };
 
 const MERGED_LEVELS: LevelBand[] = [
-  [0, 39, "Beginner", "Belum memahami konsep dasar AI, RAG, dan Agentic AI"],
-  [40, 59, "Basic Awareness", "Sudah mengenal AI, RAG, dan Agentic AI, pemahaman masih terbatas"],
-  [60, 79, "AI Ready", "Memahami konsep dan penggunaan dasar AI, RAG, dan Agentic AI"],
-  [80, 89, "AI Proficient", "Memahami AI, RAG, dan Agentic AI serta mampu menerapkannya secara efektif"],
-  [90, 100, "AI Champion", "Sangat memahami konsep, penerapan, dan risiko AI, RAG, dan Agentic AI"],
+  [0, 39, "Beginner", "Belum memahami konsep dasar Generative AI, prompting, dan Agentic AI"],
+  [40, 59, "Basic Awareness", "Sudah mengenal Generative AI, prompting, dan Agentic AI, pemahaman masih terbatas"],
+  [60, 79, "AI Ready", "Memahami konsep dan penggunaan dasar Generative AI, prompting, dan Agentic AI"],
+  [80, 89, "AI Proficient", "Memahami Generative AI, prompting, dan Agentic AI serta mampu menerapkannya secara efektif"],
+  [90, 100, "AI Champion", "Sangat memahami konsep, penerapan, dan risiko Generative AI dan Agentic AI"],
 ];
 
-// 0-based indexes into MODULES[key].main of the "dasar" (recall/definition)
-// questions; every other main question is "penerapan" (applied). Bonus
-// questions are all scenario-based, so all count as penerapan.
-const BASIC_MAIN_INDEXES: Record<(typeof MERGED_MODULE_KEYS)[number], number[]> = {
-  m1: [0, 1, 2, 3, 5, 6, 7, 10, 13],
-  m2: [0, 2, 3, 4, 5, 6, 7, 8, 9],
-  m3: [0, 1, 2, 3, 4, 5, 8, 9, 11, 14],
-};
+type QuestionRef = { mod: MergedModuleKey; pool: "main" | "bonus"; index: number };
 
-const PRE_PER_MODULE = { basic: 5, applied: 0 };
-const POST_PER_MODULE = { basic: 2, applied: 3 };
-const POST_BONUS_TOTAL = 5;
+function refs(mod: QuestionRef["mod"], pool: QuestionRef["pool"], indexes: number[]): QuestionRef[] {
+  return indexes.map((index) => ({ mod, pool, index }));
+}
+
+// Fixed question sets: every participant gets the same questions (order and
+// options are shuffled), and pre/post never share a question. 0-based
+// indexes into MODULES[mod].main / .bonus.
+const MERGED_QUESTION_SETS: Record<TestType, QuestionRef[]> = {
+  pre: [
+    ...refs("m1", "main", [0, 1, 2, 6, 8]),
+    ...refs("m2", "main", [0, 1, 5, 7, 8]),
+    ...refs("m3", "main", [0, 1, 4, 5, 8]),
+  ],
+  post: [
+    ...refs("m1", "main", [3, 7, 9, 12, 13, 14]),
+    ...refs("m1", "bonus", [0]),
+    ...refs("m2", "main", [2, 6, 9, 10, 11, 12, 13]),
+    ...refs("m3", "main", [3, 7, 9, 11, 12, 14]),
+  ],
+};
 
 export function getModuleMeta(mod: string): ModuleMeta {
   if (mod === MERGED_MODULE_CODE) return MERGED_META;
@@ -61,10 +71,6 @@ function toItem(q: QuestionDef, kind: "main" | "bonus"): AnsweredItem {
   };
 }
 
-function pickRandom<T>(pool: T[], count: number): T[] {
-  return shuffle([...pool]).slice(0, count);
-}
-
 export function buildSingleModuleItems(mod: string, testType: TestType): QuizItem[] {
   const m = MODULES[mod];
   const list: QuizItem[] = shuffle(m.main.map((q) => toItem(q, "main")));
@@ -75,39 +81,8 @@ export function buildSingleModuleItems(mod: string, testType: TestType): QuizIte
   return list;
 }
 
-/**
- * Pre-test: 5 "dasar" questions per module (15 total).
- * Post-test: 2 dasar + 3 penerapan per module (15 main), plus 5 scenario
- * bonus questions — one from each module, the rest drawn from the
- * remaining bonus pool. No practical/essay item (out of the 20-minute
- * budget; assessed by the facilitator separately).
- */
+/** Pre-test: 15 fixed questions. Post-test: 20 fixed questions, no bonus/essay. */
 export function buildMergedItems(testType: TestType): QuizItem[] {
-  const perModule = testType === "pre" ? PRE_PER_MODULE : POST_PER_MODULE;
-
-  const main: AnsweredItem[] = [];
-  for (const key of MERGED_MODULE_KEYS) {
-    const basicIdx = new Set(BASIC_MAIN_INDEXES[key]);
-    const all = MODULES[key].main;
-    const basic = all.filter((_, i) => basicIdx.has(i));
-    const applied = all.filter((_, i) => !basicIdx.has(i));
-    main.push(
-      ...pickRandom(basic, perModule.basic).map((q) => toItem(q, "main")),
-      ...pickRandom(applied, perModule.applied).map((q) => toItem(q, "main")),
-    );
-  }
-
-  const list: QuizItem[] = shuffle(main);
-  if (testType === "post") {
-    const guaranteed: QuestionDef[] = [];
-    const remaining: QuestionDef[] = [];
-    for (const key of MERGED_MODULE_KEYS) {
-      const [first, ...rest] = shuffle([...MODULES[key].bonus]);
-      guaranteed.push(first);
-      remaining.push(...rest);
-    }
-    const bonus = [...guaranteed, ...pickRandom(remaining, POST_BONUS_TOTAL - guaranteed.length)];
-    list.push(...shuffle(bonus).map((q) => toItem(q, "bonus")));
-  }
-  return list;
+  const items = MERGED_QUESTION_SETS[testType].map(({ mod, pool, index }) => toItem(MODULES[mod][pool][index], "main"));
+  return shuffle(items);
 }

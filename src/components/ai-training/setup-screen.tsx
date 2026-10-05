@@ -91,8 +91,8 @@ export function SetupScreen(props: SetupScreenProps) {
     const isPre = merged.testType === "pre";
     const moduleNames = Object.values(MODULES).map((m) => m.name).join(", ");
     const mergedNote = isPre
-      ? `15 soal pilihan ganda (5 per modul). Durasi ${merged.durationMinutes} menit. Kerjakan sebelum sesi dimulai.`
-      : `15 soal utama (5 per modul) + 5 bonus studi kasus (+2 poin). Durasi ${merged.durationMinutes} menit. Passing grade 80.`;
+      ? `15 soal pilihan ganda. Durasi ${merged.durationMinutes} menit. Kerjakan sebelum sesi dimulai.`
+      : `20 soal pilihan ganda. Durasi ${merged.durationMinutes} menit. Passing grade 80.`;
 
     return (
       <section id="s-setup" className={`screen${active ? " on" : ""}`}>
@@ -102,7 +102,7 @@ export function SetupScreen(props: SetupScreenProps) {
             {isPre ? "Pre-Test" : "Post-Test"} gabungan <span>semua modul.</span>
           </h1>
           <p>
-            Soal diambil dari {moduleNames}. Isi data peserta lalu mulai. Soal dan urutan pilihan jawaban diacak untuk
+            Soal diambil dari {moduleNames}. Isi data peserta lalu mulai. Urutan soal dan pilihan jawaban diacak untuk
             setiap peserta.
           </p>
         </div>

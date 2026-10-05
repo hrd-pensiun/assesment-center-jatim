@@ -85,15 +85,17 @@ export function ReportTemplate({ meta, testType, participant, result, essay, gen
             <span>Nilai utama /100</span>
           </div>
           <div className="r-box">
-            <b>{result.correct}/15</b>
+            <b>{result.correct}/{result.main.length}</b>
             <span>Jawaban benar</span>
           </div>
           {isPost ? (
             <>
-              <div className="r-box">
-                <b>+{result.bonusPts}</b>
-                <span>Bonus MC</span>
-              </div>
+              {result.bonus.length > 0 ? (
+                <div className="r-box">
+                  <b>+{result.bonusPts}</b>
+                  <span>Bonus MC</span>
+                </div>
+              ) : null}
               <div className="r-box">
                 <b>{result.gain !== null ? (result.gain >= 0 ? `+${result.gain}` : result.gain) : "—"}</b>
                 <span>Learning gain</span>

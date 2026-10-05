@@ -51,16 +51,18 @@ export function ResultScreen({ active, moduleName, hasPractical, testType, resul
           <div className="stat">
             <b>
               {result.correct}
-              <span style={{ fontSize: 13, color: "var(--muted)" }}>/15</span>
+              <span style={{ fontSize: 13, color: "var(--muted)" }}>/{result.main.length}</span>
             </b>
             <span>Jawaban benar</span>
           </div>
           {isPost ? (
             <>
-              <div className="stat">
-                <b>+{result.bCorrect * 2}</b>
-                <span>Poin bonus</span>
-              </div>
+              {result.bonus.length > 0 ? (
+                <div className="stat">
+                  <b>+{result.bCorrect * 2}</b>
+                  <span>Poin bonus</span>
+                </div>
+              ) : null}
               <div className="stat">
                 <b>{result.gain !== null ? (result.gain >= 0 ? `+${result.gain}` : result.gain) : "—"}</b>
                 <span>Learning gain</span>
@@ -73,7 +75,7 @@ export function ResultScreen({ active, moduleName, hasPractical, testType, resul
           ) : (
             <>
               <div className="stat">
-                <b>{15 - result.correct}</b>
+                <b>{result.main.length - result.correct}</b>
                 <span>Belum tepat</span>
               </div>
               <div className="stat">
@@ -132,7 +134,9 @@ export function ResultScreen({ active, moduleName, hasPractical, testType, resul
           <div className="note">
             {hasPractical
               ? "Practical challenge dinilai terpisah oleh fasilitator (maks +10 poin). Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."
-              : "Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."}
+              : result.bonus.length > 0
+                ? "Nilai utama dan bonus dilaporkan terpisah agar learning gain tetap sebanding."
+                : "Learning gain dihitung dari selisih nilai Post-Test dan Pre-Test."}
           </div>
         ) : null}
       </div>
